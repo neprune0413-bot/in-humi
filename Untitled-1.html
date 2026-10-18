@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rhyme Memo</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #bb86fc;
+            --accent-hover: #9956f6;
+            --border-color: #333333;
+            --danger-color: #cf6679;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            text-align: center;
+            color: var(--accent-color);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .tab.active {
+            opacity: 1;
+            border-bottom: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: #2c2c2c;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        button.btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button.btn:active {
+            background-color: var(--accent-hover);
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .rhyme-list {
+            list-style: none;
+        }
+
+        .rhyme-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .rhyme-pair {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .rhyme-pair span {
+            color: var(--accent-color);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 4px 8px;
+        }
+
+        .result-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+
+        .empty-msg {
+            text-align: center;
+            opacity: 0.5;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Rhyme Memo</h1>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchView('register')">登録・一覧</button>
+        <button class="tab" onclick="switchView('search')">韻を検索</button>
+    </div>
+
+    <!-- 登録・一覧ビュー -->
+    <div id="register-view" class="view active">
+        <div class="card">
+            <div class="form-group">
+                <label for="word1">単語 1</label>
+                <input type="text" id="word1" placeholder="例: サクラ">
+            </div>
+            <div class="form-group">
+                <label for="word2">単語 2</label>
+                <input type="text" id="word2" placeholder="例: マカラ">
+            </div>
+            <button class="btn" onclick="addRhyme()">ペアを保存</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="filter-input" placeholder="登録リストから絞り込み検索..." oninput="renderList()">
+        </div>
+
+        <ul id="rhyme-list" class="rhyme-list"></ul>
+    </div>
+
+    <!-- 韻検索ビュー -->
+    <div id="search-view" class="view">
+        <div class="card">
+            <div class="form-group">
+                <label for="vowel-search-input">ワード・母音を入力</label>
+                <input type="text" id="vowel-search-input" placeholder="例: あおあ / カタナ" oninput="searchSimilarRhymes()">
+            </div>
+        </div>
+        <div id="search-results">
+            <div class="empty-msg">キーワードを入力すると、似た響きの単語がここに表示されます</div>
+        </div>
+    </div>
+
+    <script>
+        // ローカルストレージからデータを取得
+        let rhymes = JSON.parse(localStorage.getItem('rhymes_data')) || [];
+
+        function switchView(viewName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+
+            if (viewName === 'register') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('register-view').classList.add('active');
+                renderList();
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('search-view').classList.add('active');
+            }
+        }
+
+        function addRhyme() {
+            const w1 = document.getElementById('word1').value.trim();
+            const w2 = document.getElementById('word2').value.trim();
+
+            if (!w1 || !w2) {
+                alert('両方の単語を入力してください');
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now(),
+                w1: w1,
+                w2: w2,
+                date: new Date().toLocaleDateString()
+            };
+
+            rhymes.unshift(newEntry);
+            saveAndRefresh();
+
+            document.getElementById('word1').value = '';
+            document.getElementById('word2').value = '';
+        }
+
+        function deleteRhyme(id) {
+            rhymes = rhymes.filter(r => r.id !== id);
+            saveAndRefresh();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('rhymes_data', JSON.stringify(rhymes));
+            renderList();
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('rhyme-list');
+            const filter = document.getElementById('filter-input').value.toLowerCase();
+            
+            const filtered = rhymes.filter(r => 
+                r.w1.toLowerCase().includes(filter) || r.w2.toLowerCase().includes(filter)
+            );
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<li class="empty-msg">メモがありません</li>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(r => `
+                <li class="rhyme-item">
+                    <div class="rhyme-pair">
+                        ${escapeHtml(r.w1)} <span>/</span> ${escapeHtml(r.w2)}
+                    </div>
+                    <button class="delete-btn" onclick="deleteRhyme(${r.id})">削除</button>
+                </li>
+            `).join('');
+        }
+
+        // 簡易母音変換（カタカナの母音抽出イメージ）
+        function getVowelPattern(str) {
+            // カタカナ・ひらがなを簡易的に母音（あいうえお）主体に変換するなどの処理
+            return str.replace(/[いきぎしじちぢにひびぴみりゐイキギシジチヂニヒビピミリヰ]/g, 'い')
+                      .replace(/[うくぐすずつづぬふぶぷむゆるヴウクグスズツヅヌフブプムユルヴ]/g, 'う')
+                      .replace(/[えけげせぜてでねへべぺめれゑエケゲセゼテデネヘベペメレヱ]/g, 'え')
+                      .replace(/[おこごそぞとどんどのほぼぽもよろをオコゴソゾトドノホボポモヨロヲ]/g, 'お')
+                      .replace(/[あかガさざただなはばぱまやらわアカガサザタダナハバパマヤラワんン]/g, 'あ');
+        }
+
+        function searchSimilarRhymes() {
+            const query = document.getElementById('vowel-search-input').value.trim();
+            const resultsEl = document.getElementById('search-results');
+
+            if (!query) {
+                resultsEl.innerHTML = '<div class="empty-msg">キーワードを入力すると、似た響きの単語がここに表示されます</div>';
+                return;
+            }
+
+            // 登録されているすべての単語をピックアップして重複を排除
+            const allWords = new Set();
+            rhymes.forEach(r => {
+                allWords.add(r.w1);
+                allWords.add(r.w2);
+            });
+
+            const queryPattern = getVowelPattern(query);
+            const matches = [];
+
+            allWords.forEach(word => {
+                const pattern = getVowelPattern(word);
+                // 部分一致やパターン一致度合いで抽出
+                if (word.includes(query) || pattern.includes(queryPattern) || query.includes(word)) {
+                    matches.push(word);
+                }
+            });
+
+            if (matches.length === 0) {
+                resultsEl.innerHTML = '<div class="empty-msg">一致する単語が見つかりませんでした</div>';
+                return;
+            }
+
+            resultsEl.innerHTML = `
+                <div style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 8px;">検索結果: ${matches.length}件</div>
+                ${Array.from(matches).map(w => `<div class="result-item">${escapeHtml(w)}</div>`).join('')}
+            `;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&'`<>""\n]/g, function(match) {
+                const entityMap = {
+                    '&': '&amp;',
+                    '': '&#x27;',
+                    '`': '&#x60;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    '\n': '<br>'
+                };
+                return entityMap[match];
+            });
+        }
+
+        // 初期描画
+        renderList();
+    </script>
+</body>
+</html>
